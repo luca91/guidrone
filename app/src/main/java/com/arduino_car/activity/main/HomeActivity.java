@@ -8,31 +8,33 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.arduino_car.activity.location.LocationControlActivity;
 import com.led.arduino_car.R;
 
 import java.io.IOException;
-import java.util.Set;
 import java.util.UUID;
 
 
-public class HomeActivity extends ActionBarActivity
+public class HomeActivity extends ActionBarActivity implements View.OnTouchListener
 {
+
     //widgets
     Button btnPaired;
-    ListView devicelist;
+    Button forward;
+    Button left;
+    Button backward;
+    Button right;
+    //ListView locationsList;
     //Bluetooth
     private BluetoothAdapter myBluetooth = null;
-    private Set<BluetoothDevice> pairedDevices;
+    //private Set<BluetoothDevice> pairedDevices;
     public static String EXTRA_ADDRESS = "98:D3:31:FC:15:BD";
     private BluetoothDevice car;
     public static BluetoothSocket btSocket = null;
@@ -46,10 +48,20 @@ public class HomeActivity extends ActionBarActivity
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+        //db = new ACDBHelper(this);
 
         //Calling widgets
         btnPaired = (Button)findViewById(R.id.connect);
-        //devicelist = (ListView)findViewById(R.id.listView);
+        forward = (Button)findViewById(R.id.forward);
+        left = (Button)findViewById(R.id.left);
+        backward = (Button)findViewById(R.id.backward);
+        right = (Button)findViewById(R.id.right);
+        forward.setOnTouchListener(this);
+        left.setOnTouchListener(this);
+        backward.setOnTouchListener(this);
+        right.setOnTouchListener(this);
+        //locationsList = (ListView)findViewById(R.id.locationsList);
+        //setLocationsList();
 
         //if the device has bluetooth
         myBluetooth = BluetoothAdapter.getDefaultAdapter();
@@ -77,6 +89,7 @@ public class HomeActivity extends ActionBarActivity
             }
         });
 
+
     }
 
     private void pairedDevicesList(){
@@ -84,8 +97,6 @@ public class HomeActivity extends ActionBarActivity
         car = myBluetooth.getRemoteDevice(EXTRA_ADDRESS);
         if(car != null){
             new ConnectBT().execute(); //Call the class to connect
-            Intent i = new Intent(this, LocationControlActivity.class);
-            startActivity(i);
         }
         /*pairedDevices = myBluetooth.getBondedDevices();
         ArrayList list = new ArrayList();
@@ -111,7 +122,7 @@ public class HomeActivity extends ActionBarActivity
 
     }
 
-    private AdapterView.OnItemClickListener myListClickListener = new AdapterView.OnItemClickListener()
+    /*private AdapterView.OnItemClickListener myListClickListener = new AdapterView.OnItemClickListener()
     {
         public void onItemClick (AdapterView<?> av, View v, int arg2, long arg3)
         {
@@ -127,7 +138,7 @@ public class HomeActivity extends ActionBarActivity
             i.putExtra(EXTRA_ADDRESS, address); //this will be received at ledControl (class) Activity
             startActivity(i);
         }
-    };
+    };*/
 
 
     @Override
@@ -152,6 +163,7 @@ public class HomeActivity extends ActionBarActivity
 
         return super.onOptionsItemSelected(item);
     }
+
 
     private class ConnectBT extends AsyncTask<Void, Void, Void>  // UI thread
     {
@@ -210,4 +222,53 @@ public class HomeActivity extends ActionBarActivity
     {
         Toast.makeText(getApplicationContext(),s,Toast.LENGTH_LONG).show();
     }
+
+    private void init(){
+
+    }
+
+    /*private void setLocationsList(){
+        ArrayAdapter<String> locations = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,db.getAllLocations());
+        locationsList.setAdapter(locations);
+        locationsList.setOnItemClickListener(this);
+    }*/
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        int id = v.getId();
+        int action = event.getAction();
+        Log.d("HomeActivity", "Action detected: " + action);
+        try {
+            if(btSocket != null && !btSocket.isConnected())
+                btSocket.connect();
+            if(action == MotionEvent.ACTION_DOWN) {
+                switch (id) {
+                    case R.id.forward:
+                        btSocket.getOutputStream().write("F".toString().getBytes());
+                        Log.d("HomeActivity", "Command: forward.");
+                        break;
+                    case R.id.left:
+                        btSocket.getOutputStream().write("L".toString().getBytes());
+                        Log.d("HomeActivity", "Command: left.");
+                        break;
+                    case R.id.backward:
+                        btSocket.getOutputStream().write("B".toString().getBytes());
+                        Log.d("HomeActivity", "Command: backward.");
+                        break;
+                    case R.id.right:
+                        btSocket.getOutputStream().write("R".toString().getBytes());
+                        Log.d("HomeActivity", "Command: right.");
+                        break;
+                }
+            }
+            else if(action == MotionEvent.ACTION_UP){
+                btSocket.getOutputStream().write("S".toString().getBytes());
+                Log.d("HomeActivity", "Command: stop.");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 }
