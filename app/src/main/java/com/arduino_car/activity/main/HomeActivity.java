@@ -81,11 +81,26 @@ public class HomeActivity extends ActionBarActivity implements View.OnTouchListe
                 startActivityForResult(turnBTon,1);
         }
 
+        /*
+        Listener for connect/disconnect button
+         */
         btnPaired.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v)
             {
-                pairedDevicesList();
+                if(btSocket == null)
+                    pairedDevicesList();
+                else if(btSocket.isConnected()){
+                    try{
+                        btSocket.close();
+                        btSocket = null;
+                        btnPaired.setText(R.string.connect);
+                        msg("Disonnected.");
+                    }
+                    catch (IOException e){
+                        e.printStackTrace();
+                    }
+                }
             }
         });
 
@@ -165,6 +180,9 @@ public class HomeActivity extends ActionBarActivity implements View.OnTouchListe
     }
 
 
+    /*
+    Class for managing bluetootj connection.
+     */
     private class ConnectBT extends AsyncTask<Void, Void, Void>  // UI thread
     {
         private boolean ConnectSuccess = true; //if it's here, it's almost connected
@@ -209,6 +227,7 @@ public class HomeActivity extends ActionBarActivity implements View.OnTouchListe
             {
                 msg("Connected.");
                 isBtConnected = true;
+                btnPaired.setText(R.string.disconnect);
             }
             progress.dismiss();
         }
@@ -220,11 +239,7 @@ public class HomeActivity extends ActionBarActivity implements View.OnTouchListe
 
     private void msg(String s)
     {
-        Toast.makeText(getApplicationContext(),s,Toast.LENGTH_LONG).show();
-    }
-
-    private void init(){
-
+        Toast.makeText(getApplicationContext(),s,Toast.LENGTH_SHORT).show();
     }
 
     /*private void setLocationsList(){
@@ -233,6 +248,9 @@ public class HomeActivity extends ActionBarActivity implements View.OnTouchListe
         locationsList.setOnItemClickListener(this);
     }*/
 
+    /*
+    Listener for the command sent by arrow pressing on the screen.
+     */
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         int id = v.getId();
